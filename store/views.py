@@ -6,11 +6,12 @@ from category.models import Category
 def store(request,category_slug=None):
     categories=None
     products=None
-
+#if slug is prescent then if block execute
     if category_slug != None:
         categories=get_object_or_404(Category,slug=category_slug)
         products=Product.objects.filter(category=categories,is_available=True)
         product_count=products.count()
+        #other wise if there is no slug then  else block execute with product available=true 
     else:
         products=Product.objects.all().filter(is_available=True)
         product_count=products.count()
@@ -23,6 +24,7 @@ def store(request,category_slug=None):
 
 
 def product_detail(request,category_slug,product_slug):
+    #for retrieving single product if categoryslug and productslug is appeared
     try:
         single_product=Product.objects.get(category__slug=category_slug,slug=product_slug)
     except Exception as e:
