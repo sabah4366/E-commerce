@@ -1,6 +1,7 @@
-from django.shortcuts import render,redirect
+from django.shortcuts import render,redirect,get_object_or_404
 from store.models import Product
 from .models import Cart,CartItem
+from django.http import HttpResponse
 # Create your views here.
 def _cart_id(request):
     cart=request.session.session_key
@@ -28,9 +29,53 @@ def add_cart(request,product_id):
             cart=cart
         )
         cart_item.save()
-        return redirect('cart')
+    
+    return redirect('cart')
+
+def remove_cart(request,product_id):
+    cart=Cart.objects.get(cart_id=_cart_id(request))
+    product=get_object_or_404(Product,id=product_id)
+    cart_item=CartItem.objects.get(cart=cart,product=product)
+    if cart_item.quantity >1:
+        cart_item.quantity-=1
+        cart_item.save()
+    else:
+        cart_item.delete()
+
+    return redirect('cart')
 
 
 
-def cart(request):
-    return render(request,'store/cart.html')
+def cart(request,quantity=0,total=0,cart_item=None):
+    try:
+        cart=Cart.objects.get(cart_id=_cart_id(request))
+        cart_items=CartItem.objects.filter(is_active=True,cart=cart)
+        for cart_item in cart_items:
+            total+=cart_item.product.price * cart_item.quantity
+            quantity=cart_item.quantity
+        tax=(2*total)/100
+        grand_total=tax+total
+
+
+    except ObjectNotExist:
+        pass    #just ignore
+    context={
+    'total':total,
+    'quantity':quantity,
+    'cart_items':cart_items,
+    'tax':tax,
+    'grand_total':grand_total,
+    
+        }
+
+
+
+    return render(request,'store/cart.html',context)
+
+def remove_cart_item(request,product_id):
+    cart=Cart.objects.get(cart_id=_cart_id(request))
+    product=get_object_or_404(Product, id=product_id)
+    cart_item=CartItem.objects.get(cart=cart,product=product)
+    cart_item.delete()
+
+    return redirect('cart')
